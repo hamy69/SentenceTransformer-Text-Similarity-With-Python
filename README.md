@@ -10,7 +10,7 @@ This app finds the similarity between two texts (sentence1 and sentence2) and re
 2. **Ensure you have installed the python packages:**
  - Run below commands to install needed packages.
 ```bash
-pip install flask sentence-transformers numpy
+pip install flask sentence-transformers numpy Levenshtein
 ```
 
 3. **Test the app using the following command:**
