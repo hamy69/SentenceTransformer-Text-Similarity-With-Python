@@ -138,7 +138,9 @@ def calculate_ProductSimilarities():
     connection_string = 'DRIVER={ODBC Driver 17 for SQL Server};SERVER=Address;DATABASE=DB_Name;UID=User;PWD=Password'
     query = f"SELECT ID AS Id, Name_PRD AS Sentence FROM Product WHERE Status = 1"  # Adjust 'sentence' to actual column name
     SimilarityResponse = similarity_calculator.fetch_similar_sentences_from_db(target_sentence, connection_string, query, levenshteinThreshold, similarityThreshold)
-    return jsonify(SimilarityResponse)
+    # Map the response to include 'ID' and 'Name_PRD' keys
+    formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence']} for item in SimilarityResponse]
+    return jsonify(formatted_response)
 
 if __name__ == '__main__':
      app.run(debug=True, host='0.0.0.0', port=5000)
