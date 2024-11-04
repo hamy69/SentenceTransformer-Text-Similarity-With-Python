@@ -73,6 +73,7 @@ class SentenceSimilarity:
             for sentence in sentences
         ]
         return similarities
+    
     def fetch_similar_sentences_from_db(self, target_sentence, connection_string, query, levenshteinThreshold=0.3, similarityThreshold=0.9):
         """
         Connects to the SQL Server, retrieves sentences from the specified table,
@@ -80,8 +81,9 @@ class SentenceSimilarity:
         
         :param target_sentence: The sentence to compare against.
         :param connection_string: The connection string for the SQL Server.
-        :param threshold: The similarity threshold (default is 0.9).
-        :return: List of sentences with similarity > threshold.
+        :param levenshteinThreshold: The levenshtein distance threshold for cut data from and reduce time prosses in the transformer similarity (default is 0.3).
+        :param similarityThreshold: The transformer similarity threshold (default is 0.9).
+        :return: List of sentences with similarity > similarityThreshold.
         """
         try:
             # Connect to the SQL Server
