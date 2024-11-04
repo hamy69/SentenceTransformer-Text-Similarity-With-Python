@@ -7,6 +7,11 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import Levenshtein
 import pyodbc  # For SQL Server connection
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class TimeoutMiddleware:
     def __init__(self, app, timeout=60):
@@ -137,8 +142,8 @@ def calculate_ProductSimilarities():
     target_sentence = data['target_sentence']
     similarityThreshold = data['similarityThreshold']
     levenshteinThreshold = data['levenshteinThreshold']
-    connection_string = 'DRIVER={ODBC Driver 17 for SQL Server};SERVER=Address;DATABASE=DB_Name;UID=User;PWD=Password'
-    query = f"SELECT ID AS Id, Name_PRD AS Sentence FROM Product WHERE Status = 1"  # Adjust 'sentence' to actual column name
+    connection_string = os.getenv('DB_CONNECTION_STRING')
+    query = os.getenv('DB_Product_QUERY')  # Adjust 'sentence' to actual column name
     SimilarityResponse = similarity_calculator.fetch_similar_sentences_from_db(target_sentence, connection_string, query, levenshteinThreshold, similarityThreshold)
     # Map the response to include 'ID' and 'Name_PRD' keys
     formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence']} for item in SimilarityResponse]
