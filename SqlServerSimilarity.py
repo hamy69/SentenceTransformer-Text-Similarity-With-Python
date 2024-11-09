@@ -212,7 +212,7 @@ class SentenceSimilarity:
                 if Levenshtein_distance > levenshteinThreshold:
                     similarity = self.calculate_SentenceTransformer_similarity(target_sentence, sentence)
                     if similarity > similarityThreshold:
-                        similar_sentences.append({'Id': id, 'Sentence': sentence})
+                        similar_sentences.append({'Id': id, 'Sentence': sentence, 'similarity': similarity})
 
             # Close the connection
             cursor.close()
@@ -278,7 +278,9 @@ def calculate_ProductSimilarities():
     query = os.getenv('DB_Product_QUERY')  # Adjust 'sentence' to actual column name
     SimilarityResponse = similarity_calculator.fetch_similar_sentences_from_db(target_sentence, connection_string, query, levenshteinThreshold, similarityThreshold)
     # Map the response to include 'ID' and 'Name_PRD' keys
-    formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence']} for item in SimilarityResponse]
+    formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence'], 'similarity': item['similarity']} for item in SimilarityResponse]
+    # Sorting the list by 'similarity'
+    formatted_response.sort(key=lambda x: x['similarity'],reverse=True)
     return jsonify(formatted_response)
 
 if __name__ == '__main__':
