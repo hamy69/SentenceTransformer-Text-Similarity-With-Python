@@ -221,6 +221,7 @@ class SentenceSimilarity:
             return similar_sentences
         
         except Exception as e:
+            print(e)
             return jsonify({'error': str(e)}), 500
 
 similarity_calculator = SentenceSimilarity()
@@ -270,18 +271,27 @@ def calculate_ProductSimilarities():
     Returns:
         JSON response containing a list of similar sentences from the database, formatted with 'ID' and 'Name_PRD' keys.
     """
-    data = request.get_json()
-    target_sentence = data['target_sentence']
-    similarityThreshold = data['similarityThreshold']
-    levenshteinThreshold = data['levenshteinThreshold']
+    if request.is_json:
+        data = request.get_json()
+        target_sentence = data.get('target_sentence')
+        similarityThreshold = data.get('similarityThreshold', 0.9)
+        levenshteinThreshold = data.get('levenshteinThreshold', 0.3)
+    else:
+        target_sentence = request.args.get('target_sentence')
+        similarityThreshold = float(request.args.get('similarityThreshold', 0.9))
+        levenshteinThreshold = float(request.args.get('levenshteinThreshold', 0.3))
     connection_string = os.getenv('DB_CONNECTION_STRING')
     query = os.getenv('DB_Product_QUERY')  # Adjust 'sentence' to actual column name
     SimilarityResponse = similarity_calculator.fetch_similar_sentences_from_db(target_sentence, connection_string, query, levenshteinThreshold, similarityThreshold)
-    # Map the response to include 'ID' and 'Name_PRD' keys
-    formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence'], 'similarity': item['similarity']} for item in SimilarityResponse]
-    # Sorting the list by 'similarity'
-    formatted_response.sort(key=lambda x: x['similarity'],reverse=True)
-    return jsonify(formatted_response)
+    
+    if isinstance(SimilarityResponse, list):
+        # Map the response to include 'ID' and 'Name_PRD' keys
+        formatted_response = [{'ID': item['Id'], 'Name_PRD': item['Sentence'], 'Levenshtein_distance': item['Levenshtein_distance'], 'similarity': item['similarity']} for item in SimilarityResponse]
+        # Sorting the list by 'similarity'
+        formatted_response.sort(key=lambda x: x['similarity'], reverse=True)
+        return jsonify(formatted_response)
+    else:
+        return jsonify({'error': 'Unexpected response type'}), 500
 
 if __name__ == '__main__':
     """
