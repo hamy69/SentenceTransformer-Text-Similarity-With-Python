@@ -44,6 +44,8 @@ from flask import Flask, request, jsonify
 from werkzeug.exceptions import RequestTimeout
 from threading import Thread
 import time
+from datetime import datetime
+from functools import wraps
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import Levenshtein
@@ -53,6 +55,22 @@ from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+def log_execution_time(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        ip_address = request.remote_addr
+        http_method = request.method
+        route = request.path
+        timestamp = datetime.now().strftime("%d/%b/%Y %H:%M:%S")
+        print(f"[Info] {ip_address} [{timestamp}] {http_method}{route}: {func.__name__} start!")
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"[Execution Time] {func.__name__}: {execution_time:.4f} seconds!")
+        return result
+    return wrapper
 
 class TimeoutMiddleware:
     def __init__(self, app, timeout=60):
@@ -202,6 +220,7 @@ class SentenceSimilarity:
             
             # Fetch all sentences from the specified table
             cursor.execute(query)
+            print(f'[info] query -> {query}')
             rows = cursor.fetchall()
 
             # Filter sentences based on the similarity threshold
@@ -227,6 +246,7 @@ class SentenceSimilarity:
 similarity_calculator = SentenceSimilarity()
 
 @app.route('/similarity', methods=['POST'])
+@log_execution_time
 def calculate_similarity():
     """
     Endpoint to calculate the similarity between two sentences.
@@ -240,10 +260,12 @@ def calculate_similarity():
     data = request.get_json()
     sentence1 = data['sentence1']
     sentence2 = data['sentence2']
+    print(f'[info] Params -> sentence1:{sentence1} , sentence2: {sentence2}')
     similarity = similarity_calculator.calculate_SentenceTransformer_similarity(sentence1, sentence2)
     return jsonify({'similarity': similarity})
 
 @app.route('/similarities', methods=['POST'])
+@log_execution_time
 def calculate_similarities():
     """
     Endpoint to compute similarity scores for a list of sentences compared to a single sentence.
@@ -257,10 +279,12 @@ def calculate_similarities():
     data = request.get_json()
     sentences = data['sentences']
     single_sentence = data['single_sentence']
+    print(f'[info] Params -> sentences:{sentences} , single_sentence: {single_sentence}')
     SimilarityResponse = similarity_calculator.calculate_similarities(sentences, single_sentence)
     return jsonify(SimilarityResponse)
 
 @app.route('/ProductSimilarities', methods=['Get'])
+@log_execution_time
 def calculate_ProductSimilarities():
     """
     Endpoint to fetch similar sentences from the database based on a target sentence and specified thresholds.
@@ -280,6 +304,7 @@ def calculate_ProductSimilarities():
         target_sentence = request.args.get('target_sentence')
         similarityThreshold = float(request.args.get('similarityThreshold', 0.9))
         levenshteinThreshold = float(request.args.get('levenshteinThreshold', 0.3))
+    print(f'[info] Params -> target_sentence:{target_sentence} , similarityThreshold: {similarityThreshold} , levenshteinThreshold: {levenshteinThreshold}')
     connection_string = os.getenv('DB_CONNECTION_STRING')
     query = os.getenv('DB_Product_QUERY')  # Adjust 'sentence' to actual column name
     SimilarityResponse = similarity_calculator.fetch_similar_sentences_from_db(target_sentence, connection_string, query, levenshteinThreshold, similarityThreshold)
